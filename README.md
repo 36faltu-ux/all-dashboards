@@ -1,4 +1,5 @@
-# Cyber-Shield AI Developer Dashboard
+# Cyber-Shield AI Developer Dashboard added other are on the way
+
 
 Single-screen React, Vite, and Tailwind dashboard. The editor, terminal, live preview, notifications, and GitHub controls currently use local demo behavior.
 
