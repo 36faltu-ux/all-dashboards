@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import AutomationHub from '../automation-dashboard/AutomationHub.jsx'
+import AICommandCenter from '../ai-command-center/AICommandCenter.jsx'
 import {
   Bell, Check, ChevronDown, ChevronRight, CircleHelp, Code2, Crown,
   ExternalLink, FileCode2, FilePlus2, Folder, FolderOpen, Github, House,
@@ -26,6 +27,7 @@ const tools = [
   { title: 'Terminal', caption: 'Open the workspace terminal', icon: Terminal, color: 'pink', target: 'terminal' },
   { title: 'Live Preview', caption: 'Open preview when available', icon: LayoutDashboard, color: 'blue', target: 'preview' },
   { title: 'GitHub Integration', caption: 'Open repository integration', icon: Github, color: 'white', target: 'github' },
+  { title: 'View', caption: 'Switch to VS Code workspace', icon: Maximize2, color: 'blue', target: 'vscode' },
 ]
 
 function IconButton({ label, children, onClick, disabled = false }) {
@@ -68,22 +70,27 @@ function DeveloperWorkspace({ openPanels, activeSidePanel, onNotify, onClosePane
   const showEditor = openPanels.has('editor')
   const showTerminal = openPanels.has('terminal')
   const showSidePanel = Boolean(activeSidePanel)
+  const showProjectBuilderBesideEditor = showEditor && showExplorer
   const centerColumn = showExplorer ? 3 : 1
   const sideColumn = (showExplorer ? 3 : 1) + 2
   const hasUpperPane = showEditor
 
-  const columns = [
-    ...(showExplorer ? [`${explorerWidth}px`, '5px'] : []),
-    'minmax(0, 1fr)',
-    ...(showSidePanel ? ['5px', `${sideWidth}px`] : []),
-  ].join(' ')
-  const rows = hasUpperPane && showTerminal ? `minmax(150px, 1fr) 5px ${terminalHeight}px` : 'minmax(0, 1fr)'
+  const columns = showProjectBuilderBesideEditor
+    ? `${explorerWidth}px 5px minmax(0, 1fr)`
+    : [
+        ...(showExplorer ? [`${explorerWidth}px`, '5px'] : []),
+        'minmax(0, 1fr)',
+        ...(showSidePanel ? ['5px', `${sideWidth}px`] : []),
+      ].join(' ')
+  const rows = showProjectBuilderBesideEditor
+    ? 'max(68vh, 620px)'
+    : hasUpperPane && showTerminal ? `minmax(150px, 1fr) 5px ${terminalHeight}px` : 'minmax(0, 1fr)'
 
   if (!showExplorer && !showEditor && !showTerminal && !showSidePanel) {
     return <div className="developer-workspace empty-workspace"><div><span className="workspace-empty-mark"><Code2 size={24} /></span><b>Choose a tool to open your workspace</b><small>Your editor, project explorer, terminal, preview, and integrations open only when selected above.</small></div></div>
   }
 
-  return <div className="developer-workspace" style={{ gridTemplateColumns: columns, gridTemplateRows: rows }}>
+  return <div className={`developer-workspace ${showEditor ? 'editor-expanded' : ''} ${showProjectBuilderBesideEditor ? 'project-builder-open' : ''}`} style={{ gridTemplateColumns: columns, gridTemplateRows: rows }}>
     {showExplorer && <section className="panel explorer-panel resizable-panel" style={{ gridColumn: 1, gridRow: '1 / -1' }}>
       <header className="panel-header"><div className="panel-heading"><Folder size={17} className="cyan" /><h2>Project Explorer</h2></div><div className="panel-actions"><IconButton label="New file (requires backend)" disabled><FilePlus2 size={15} /></IconButton><IconButton label="Refresh project files" onClick={() => onNotify('Connect the project-files API to load workspace files')}><RefreshCw size={15} /></IconButton><IconButton label="Close project explorer" onClick={() => onClosePanel('explorer')}><X size={15} /></IconButton></div></header>
       <div className="tree-scroll"><EmptyState icon={FolderOpen} title="No project files loaded" detail="Connect the workspace-files backend to show folders and files here." /></div>
@@ -123,6 +130,8 @@ function App() {
   const [activeDashboard, setActiveDashboard] = useState('developer')
   const [mobileMenu, setMobileMenu] = useState(false)
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
+  const [sidebarWasCollapsed, setSidebarWasCollapsed] = useState(false)
+  const [vscodeMode, setVscodeMode] = useState(false)
   const [heroVisible, setHeroVisible] = useState(true)
   const [notificationsOpen, setNotificationsOpen] = useState(false)
   const [search, setSearch] = useState('')
@@ -137,6 +146,19 @@ function App() {
   }
 
   const openTool = (target) => {
+    if (target === 'vscode') {
+      if (vscodeMode) {
+        setVscodeMode(false)
+        setSidebarCollapsed(sidebarWasCollapsed)
+      } else {
+        setSidebarWasCollapsed(sidebarCollapsed)
+        setSidebarCollapsed(true)
+        setVscodeMode(true)
+        setOpenPanels(new Set(['editor', 'explorer']))
+        setActiveSidePanel(null)
+      }
+      return
+    }
     if (target === 'preview' || target === 'github') {
       setActiveSidePanel((current) => current === target ? null : target)
       return
@@ -144,8 +166,9 @@ function App() {
     setOpenPanels((current) => {
       const next = new Set(current)
       if (target === 'explorer') {
-        if (next.has('explorer') && next.has('editor')) { next.delete('explorer'); next.delete('editor') }
-        else { next.add('explorer'); next.add('editor') }
+        if (next.has('explorer')) next.delete('explorer')
+        else next.add('explorer')
+        next.add('editor')
       } else if (next.has(target)) next.delete(target)
       else next.add(target)
       return next
@@ -162,13 +185,22 @@ function App() {
 
   const activeTool = (tool) => tool.target === 'preview' || tool.target === 'github'
     ? activeSidePanel === tool.target
-    : openPanels.has(tool.target)
+    : tool.target === 'vscode' ? vscodeMode : openPanels.has(tool.target)
 
   const handleSearch = (event) => {
     setSearch(event.target.value)
   }
 
-  return <div className="app-shell">
+  const selectDashboard = (dashboard) => {
+    setActiveDashboard(dashboard)
+    setMobileMenu(false)
+    if (vscodeMode) {
+      setVscodeMode(false)
+      setSidebarCollapsed(sidebarWasCollapsed)
+    }
+  }
+
+  return <div className={`app-shell ${vscodeMode ? 'vscode-mode' : ''}`}>
     <header className="topbar">
       <button className="mobile-menu-button" onClick={() => setMobileMenu((open) => !open)} aria-label="Toggle navigation"><Menu size={21} /></button>
       <div className="brand"><img src="/shared/cyber-shield-logo.png" alt="Cyber-Shield AI" /></div>
@@ -184,18 +216,20 @@ function App() {
       <aside className={`sidebar ${mobileMenu ? 'sidebar-open' : ''} ${sidebarCollapsed ? 'sidebar-is-collapsed' : ''}`}><div className="sidebar-scroll"><div className="sidebar-toggle-row"><button className="sidebar-toggle" type="button" onClick={() => setSidebarCollapsed((collapsed) => !collapsed)} aria-label={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'} title={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}><span>{sidebarCollapsed ? <PanelLeftOpen size={18} /> : <PanelLeftClose size={18} />}</span>{!sidebarCollapsed && <small>Collapse sidebar</small>}</button></div><div className="nav-list">{navItems.map(({ title, subtitle, icon: Icon, color }) => {
         const isDeveloper = title === 'Developer Dashboard'
         const isAutomation = title === 'Automation Hub'
-        const active = isDeveloper ? activeDashboard === 'developer' : isAutomation ? activeDashboard === 'automation' : false
+        const isAICommandCenter = title === 'AI Command Center'
+        const active = isDeveloper ? activeDashboard === 'developer' : isAutomation ? activeDashboard === 'automation' : isAICommandCenter ? activeDashboard === 'ai' : false
         return <button key={title} className={`nav-entry ${active ? 'selected' : ''}`} aria-current={active ? 'page' : undefined} onClick={() => {
-          if (isDeveloper) { setActiveDashboard('developer'); setMobileMenu(false) }
-          else if (isAutomation) { setActiveDashboard('automation'); setMobileMenu(false) }
+          if (isDeveloper) selectDashboard('developer')
+          else if (isAutomation) selectDashboard('automation')
+          else if (isAICommandCenter) selectDashboard('ai')
           else showToast(`${title} is outside this workspace`)
         }}><Icon className={`nav-icon ${color || 'default'}`} size={25} strokeWidth={2.1} /><span className="nav-copy"><b>{title}</b><small>{subtitle}</small></span>{active && <ChevronRight size={17} className="nav-chevron" />}</button>
       })}</div><div className="sidebar-bottom"><button className="nav-entry compact" onClick={() => showToast('Workspace preferences service is not connected')}><Settings size={24} className="nav-icon settings-icon" /><span className="nav-copy"><b>Settings</b><small>Preferences & Config</small></span></button><button className="nav-entry compact" onClick={() => showToast('Documentation service is not connected')}><CircleHelp size={24} className="nav-icon help-icon" /><span className="nav-copy"><b>Help & Support</b><small>Documentation</small></span></button><button className="plan-card" onClick={() => showToast('Plan information is not connected')}><Crown size={23} fill="currentColor" /><span><b>Plan</b><small>Not connected</small></span><ChevronRight size={17} /></button></div></div></aside>
 
       <main className="main-content">
-        {activeDashboard === 'automation' ? <AutomationHub showToast={showToast} /> : <>
-          {heroVisible ? <section className="hero"><div className="hero-copy"><span className="eyebrow"><span className="workspace-status-dot" /> DEVELOPER WORKSPACE</span><h1>Developer Dashboard</h1><p>Code. Build. Test. Deploy. All in one workspace.</p></div><div className="hero-promise">Build secure.<br />Build smarter.<span className="hero-spark">✦</span></div><button className="hero-close" type="button" onClick={() => setHeroVisible(false)} aria-label="Hide dashboard banner" title="Hide banner for more editor space"><X size={16} /></button><div className="hero-bottom-line" /></section> : <div className="hero-restore-row"><button type="button" onClick={() => setHeroVisible(true)}>Show dashboard banner</button></div>}
-          <section className="tool-grid" aria-label="Workspace tools">{tools.map(({ title, caption, icon: Icon, color, target }) => <button key={title} className={`tool-card ${color} ${activeTool({ target }) ? 'tool-active' : ''}`} aria-pressed={activeTool({ target })} onClick={() => openTool(target)}><span className="tool-icon"><Icon size={29} strokeWidth={1.9} /></span><span className="tool-copy"><b>{title}</b><small>{caption}</small></span><ChevronRight size={17} className="tool-chevron" /></button>)}</section>
+        {activeDashboard === 'ai' ? <AICommandCenter showToast={showToast} /> : activeDashboard === 'automation' ? <AutomationHub showToast={showToast} /> : <>
+          {!vscodeMode && (heroVisible ? <section className="hero"><div className="hero-copy"><span className="eyebrow"><span className="workspace-status-dot" /> DEVELOPER WORKSPACE</span><h1>Developer Dashboard</h1><p>Code. Build. Test. Deploy. All in one workspace.</p></div><div className="hero-promise">Build secure.<br />Build smarter.<span className="hero-spark">✦</span></div><button className="hero-close" type="button" onClick={() => setHeroVisible(false)} aria-label="Hide dashboard banner" title="Hide banner for more editor space"><X size={16} /></button><div className="hero-bottom-line" /></section> : <div className="hero-restore-row"><button type="button" onClick={() => setHeroVisible(true)}>Show dashboard banner</button></div>)}
+          {vscodeMode ? <nav className="vscode-toolbar" aria-label="VS Code workspace"><div><Code2 size={17} /><strong>VS Code Workspace</strong></div><div className="vscode-toolbar-actions"><button type="button" onClick={() => openTool('explorer')}><Folder size={14} />Project Builder</button><button type="button" onClick={() => openTool('terminal')}><Terminal size={14} />Terminal</button><button type="button" onClick={() => openTool('preview')}><LayoutDashboard size={14} />Preview</button><button type="button" onClick={() => openTool('github')}><Github size={14} />GitHub</button><button className="exit-vscode-button" type="button" onClick={() => openTool('vscode')}><X size={14} />Exit View</button></div></nav> : <section className="tool-grid" aria-label="Workspace tools">{tools.map(({ title, caption, icon: Icon, color, target }) => <button key={title} className={`tool-card ${color} ${activeTool({ target }) ? 'tool-active' : ''}`} aria-pressed={activeTool({ target })} onClick={() => openTool(target)}><span className="tool-icon"><Icon size={29} strokeWidth={1.9} /></span><span className="tool-copy"><b>{title}</b><small>{caption}</small></span><ChevronRight size={17} className="tool-chevron" /></button>)}</section>}
           <DeveloperWorkspace openPanels={openPanels} activeSidePanel={activeSidePanel} onNotify={showToast} onClosePanel={closePanel} />
           <footer className="main-footer"><span>CYBER-SHIELD AI <span className="footer-sep">/</span> DEVELOPER WORKSPACE</span><span><span className="workspace-status-dot" /> BACKEND NOT CONNECTED</span><span>READY FOR INTEGRATION <Code2 size={12} /></span></footer>
         </>}

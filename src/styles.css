@@ -1,2 +1,6 @@
 @import "../developer-dashboard/styles.css";
 @import "../automation-dashboard/styles.css";
+@import "../ai-command-center/styles.css";
+
+/* Dashboard heading hierarchy */
+.hero-copy h1,.automation-hero h1,.ai-hero-copy h1,.panel-heading h2,.automation-panel-header h2,.ai-panel-header h2{font-weight:700}
