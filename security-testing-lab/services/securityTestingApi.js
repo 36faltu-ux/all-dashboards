@@ -6,6 +6,7 @@ import { apiRequest } from '../../src/lib/api.js'
  */
 export const SECURITY_TESTING_ENDPOINTS = Object.freeze({
   overview: null,
+  activity: null,
   statistics: null,
   recentScans: null,
   vulnerabilityCategories: null,
@@ -22,6 +23,8 @@ async function requestSecurityData(key, { signal, method = 'GET', body } = {}) {
 }
 
 export const fetchScanOverview = (options) => requestSecurityData('overview', options)
+/** Returns real scan activity; see ScanActivityEvent in types/index.js. */
+export const fetchScanActivity = (options) => requestSecurityData('activity', options)
 export const fetchSecurityScanStatistics = (options) => requestSecurityData('statistics', options)
 export const fetchRecentScans = (options) => requestSecurityData('recentScans', options)
 export const fetchVulnerabilityCategories = (options) => requestSecurityData('vulnerabilityCategories', options)
