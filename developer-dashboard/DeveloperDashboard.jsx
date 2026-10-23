@@ -2,6 +2,10 @@ import { useState } from 'react'
 import AutomationHub from '../automation-dashboard/AutomationHub.jsx'
 import AICommandCenter from '../ai-command-center/AICommandCenter.jsx'
 import ThreatIntelligencePage from '../threat-intelligence/ThreatIntelligencePage.jsx'
+import SecurityTestingLabPage from '../security-testing-lab/SecurityTestingLabPage.jsx'
+import IdentityNetworkSecurityPage from '../identity-network-security/IdentityNetworkSecurityPage.jsx'
+import InvestigationCenterPage from '../investigation-center/InvestigationCenterPage.jsx'
+import AIDefenseResponsePage from '../ai-defense-response/AIDefenseResponsePage.jsx'
 import {
   Bell, Check, ChevronDown, ChevronRight, CircleHelp, Code2, Crown,
   ExternalLink, FileCode2, FilePlus2, Folder, FolderOpen, Github, House,
@@ -219,18 +223,26 @@ function App() {
         const isAutomation = title === 'Automation Hub'
         const isAICommandCenter = title === 'AI Command Center'
         const isThreatIntelligence = title === 'Threat Intelligence'
-        const active = isDeveloper ? activeDashboard === 'developer' : isAutomation ? activeDashboard === 'automation' : isAICommandCenter ? activeDashboard === 'ai' : isThreatIntelligence ? activeDashboard === 'threat' : false
+        const isSecurityTestingLab = title === 'Security Testing Lab'
+        const isIdentityNetwork = title === 'Identity & Network'
+        const isInvestigation = title === 'Investigation Center'
+        const isAIDefense = title === 'AI Defense & Response'
+        const active = isDeveloper ? activeDashboard === 'developer' : isAutomation ? activeDashboard === 'automation' : isAICommandCenter ? activeDashboard === 'ai' : isThreatIntelligence ? activeDashboard === 'threat' : isSecurityTestingLab ? activeDashboard === 'security-testing' : isIdentityNetwork ? activeDashboard === 'identity-network' : isInvestigation ? activeDashboard === 'investigation' : isAIDefense ? activeDashboard === 'ai-defense' : false
         return <button key={title} className={`nav-entry ${active ? 'selected' : ''}`} aria-current={active ? 'page' : undefined} onClick={() => {
           if (isDeveloper) selectDashboard('developer')
           else if (isAutomation) selectDashboard('automation')
           else if (isAICommandCenter) selectDashboard('ai')
           else if (isThreatIntelligence) selectDashboard('threat')
+          else if (isSecurityTestingLab) selectDashboard('security-testing')
+          else if (isIdentityNetwork) selectDashboard('identity-network')
+          else if (isInvestigation) selectDashboard('investigation')
+          else if (isAIDefense) selectDashboard('ai-defense')
           else showToast(`${title} is outside this workspace`)
         }}><Icon className={`nav-icon ${color || 'default'}`} size={25} strokeWidth={2.1} /><span className="nav-copy"><b>{title}</b><small>{subtitle}</small></span>{active && <ChevronRight size={17} className="nav-chevron" />}</button>
       })}</div><div className="sidebar-bottom"><button className="nav-entry compact" onClick={() => showToast('Workspace preferences service is not connected')}><Settings size={24} className="nav-icon settings-icon" /><span className="nav-copy"><b>Settings</b><small>Preferences & Config</small></span></button><button className="nav-entry compact" onClick={() => showToast('Documentation service is not connected')}><CircleHelp size={24} className="nav-icon help-icon" /><span className="nav-copy"><b>Help & Support</b><small>Documentation</small></span></button><button className="plan-card" onClick={() => showToast('Plan information is not connected')}><Crown size={23} fill="currentColor" /><span><b>Plan</b><small>Not connected</small></span><ChevronRight size={17} /></button></div></div></aside>
 
       <main className="main-content">
-        {activeDashboard === 'ai' ? <AICommandCenter showToast={showToast} /> : activeDashboard === 'automation' ? <AutomationHub showToast={showToast} /> : activeDashboard === 'threat' ? <ThreatIntelligencePage showToast={showToast} /> : <>
+        {activeDashboard === 'ai' ? <AICommandCenter showToast={showToast} /> : activeDashboard === 'automation' ? <AutomationHub showToast={showToast} /> : activeDashboard === 'threat' ? <ThreatIntelligencePage showToast={showToast} /> : activeDashboard === 'security-testing' ? <SecurityTestingLabPage showToast={showToast} /> : activeDashboard === 'identity-network' ? <IdentityNetworkSecurityPage showToast={showToast} /> : activeDashboard === 'investigation' ? <InvestigationCenterPage showToast={showToast} /> : activeDashboard === 'ai-defense' ? <AIDefenseResponsePage showToast={showToast} /> : <>
           {!vscodeMode && (heroVisible ? <section className="hero"><div className="hero-copy"><span className="eyebrow"><span className="workspace-status-dot" /> DEVELOPER WORKSPACE</span><h1>Developer Dashboard</h1><p>Code. Build. Test. Deploy. All in one workspace.</p></div><div className="hero-promise">Build secure.<br />Build smarter.<span className="hero-spark">✦</span></div><button className="hero-close" type="button" onClick={() => setHeroVisible(false)} aria-label="Hide dashboard banner" title="Hide banner for more editor space"><X size={16} /></button><div className="hero-bottom-line" /></section> : <div className="hero-restore-row"><button type="button" onClick={() => setHeroVisible(true)}>Show dashboard banner</button></div>)}
           {vscodeMode ? <nav className="vscode-toolbar" aria-label="VS Code workspace"><div><Code2 size={17} /><strong>VS Code Workspace</strong></div><div className="vscode-toolbar-actions"><button type="button" onClick={() => openTool('explorer')}><Folder size={14} />Project Builder</button><button type="button" onClick={() => openTool('terminal')}><Terminal size={14} />Terminal</button><button type="button" onClick={() => openTool('preview')}><LayoutDashboard size={14} />Preview</button><button type="button" onClick={() => openTool('github')}><Github size={14} />GitHub</button><button className="exit-vscode-button" type="button" onClick={() => openTool('vscode')}><X size={14} />Exit View</button></div></nav> : <section className="tool-grid" aria-label="Workspace tools">{tools.map(({ title, caption, icon: Icon, color, target }) => <button key={title} className={`tool-card ${color} ${activeTool({ target }) ? 'tool-active' : ''}`} aria-pressed={activeTool({ target })} onClick={() => openTool(target)}><span className="tool-icon"><Icon size={29} strokeWidth={1.9} /></span><span className="tool-copy"><b>{title}</b><small>{caption}</small></span><ChevronRight size={17} className="tool-chevron" /></button>)}</section>}
           <DeveloperWorkspace openPanels={openPanels} activeSidePanel={activeSidePanel} onNotify={showToast} onClosePanel={closePanel} />
